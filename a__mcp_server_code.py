@@ -64,7 +64,7 @@ async def search_bdr(query: Annotated[str, "Solr syntax query (e.g., primary_tit
     if fields:
         params['fl'] = fields
     # Compose the query string safely
-    url = f"{API_BASE}/search/" + "?" + httpx.QueryParams(params).render()
+    url = f"{API_BASE}/search/" + "?" + str(httpx.QueryParams(params))
     log.debug(f'fetching search-url, ``{url}``')
     data = await fetch_json(url)
     docs = data.get('response', {}).get('docs', [])  # The BDR wraps Solr responses in response/docs
