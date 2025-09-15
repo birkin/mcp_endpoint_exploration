@@ -81,6 +81,9 @@ async def search_bdr(
       "took_ms": <float>
     }
 
+    ## model usage notes (very important)
+    - When referring to items from these results, _always_ include the PID (e.g., "bdr:123456").
+
     ## examples
     - query: primary_title:"irish"
     - query: rel_is_member_of_collection_ssim:"bdr:123456"
