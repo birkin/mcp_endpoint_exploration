@@ -17,3 +17,12 @@ on this page...
 
 ---
 
+
+## preparatory research
+
+Used chatgpt (gpt-5-thinking, in agent-mode) to investigate how I might use this professional-development-day to achieve the goal outlined above. The [result][gpt-prep].
+
+[gpt-prep]: <https://chatgpt.com/share/68c8166e-8934-8006-bd09-3cbc960a3ddf>
+
+---
+---
