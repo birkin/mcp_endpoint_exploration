@@ -1,0 +1,9 @@
+{
+    "mcpServers": {
+      "bdr": {
+        "command": "uv",
+        "args": ["--directory", "./mcp_endpoint_exploration", "run", "a__mcp_server_code.py"]
+      }
+    }
+  }
+  
