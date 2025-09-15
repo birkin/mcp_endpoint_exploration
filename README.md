@@ -25,4 +25,45 @@ Used chatgpt (gpt-5-thinking, in agent-mode) to investigate how I might use this
 [gpt-prep]: <https://chatgpt.com/share/68c8166e-8934-8006-bd09-3cbc960a3ddf>
 
 ---
+
+
+## setting up ollama
+
+Checking my version...
+
+```bash
+% ollama --version
+Warning: could not connect to a running Ollama instance
+Warning: client version is 0.7.0
+```
+
+Opened the Mac app (it disappears after a moment, showing the ollama icon in the menu bar).
+
+Trying the version again...
+
+```
+% ollama --version
+ollama version is 0.7.0
+```
+
+The icon shows an update is available, and offers a "Restart to update" menu-option. Selecting that.
+
+```bash
+% ollama --version
+ollama version is 0.11.10
+```
+
+
+## choosing a model
+
+The Ollama menu-bar icon has an "Open Ollama" menu-option. Selecting that. It opens an interactive chat-window, and shows a listing of models available.
+
+I selected the "qwen3:4b" model. I know from previous experience qwen-3 is a reasoning mode. But I'd used qwen3:7b, and though it was _much_ more impressive than qwen2.5:7b, it was a bit slow -- so I figured I'd try the  qwen3:4b model, to see if it's fast enough for the development phase. (The research doc recommends using qwen2.5:7b for development, then switching over to qwen3 once things are properly hooked up.) I may still do that. Quck benchmarks:
+- qwen3:4b query (fresh session): "hi"; it thought for 4 seconds.
+- qwen3:4b query: "what's the first line of the gettysburg address?"; it thought for 11 seconds
+- those queries on qwen2.5:7b (fresh session) had immediate responses.
+
+So I'll use qwen2.5:7b for initial development.
+
+---
 ---
