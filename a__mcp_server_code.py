@@ -1,5 +1,5 @@
 ## imports httpx and mcp framework
-from typing import Annotated, Optional
+from typing import Annotated, Any, Optional
 
 import httpx
 from mcp.server.fastmcp import FastMCP
@@ -9,7 +9,7 @@ mcp = FastMCP("bdr", stateless_http=False)
 
 API_BASE = "https://repository.library.brown.edu/api"
 
-async def fetch_json(url: str) -> dict[str, any]:
+async def fetch_json(url: str) -> dict[str, Any]:
     """Helper to fetch JSON and raise exceptions on HTTP errors."""
     async with httpx.AsyncClient() as client:
         r = await client.get(url, timeout=30.0)
