@@ -1,0 +1,17 @@
+[project]
+name = "mcp-endpoint-exploration"
+version = "0.0.0"
+description = "Explores whats involved in setting up an MCP endpoint, using the BDR-APIs as the target data-source."
+readme = "coming"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "Django~=5.2.0",
+    "httpx",
+    "python-dotenv",
+    "trio",
+]
+
+[dependency-groups]
+local = []
+staging = [ ]
+prod = [ ]
