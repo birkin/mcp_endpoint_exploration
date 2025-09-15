@@ -69,7 +69,7 @@ async def search_bdr(
       "returned": <int>,           # len(docs) actually returned
       "docs": [
         {
-          "pid": "bdr:…",          # always present to support follow-ups
+          "pid": "bdr:…",          # _always_ present to support follow-ups
           "primary_title": "…",
           "abstract": "…",
           "ir_collection_name": "…",
@@ -82,7 +82,7 @@ async def search_bdr(
     }
 
     ## model usage notes (very important)
-    - When referring to items from these results, _always_ include the PID (e.g., "bdr:123456").
+    - _Always_ include the item's pid (e.g., "bdr:123456") in any response which references an item.
 
     ## examples
     - query: primary_title:"irish"
