@@ -65,5 +65,27 @@ I selected the "qwen3:4b" model. I know from previous experience qwen-3 is a rea
 
 So I'll use qwen2.5:7b for initial development.
 
+
+## confirming model is available via terminal
+
+The docs suggest this:
+```
+curl -X POST localhost:11434/api/generate -d '{"model":"qwen2.5:7b", "prompt":"", "stream":false}'
+```
+
+...but that seems to load the model into memory, not just check to see if it's loaded. From some research, for my reference, some other useful commands:
+
+List installed models (on disk):
+```
+curl localhost:11434/api/tags | jq
+```
+
+List models loaded into memory:
+```
+curl localhost:11434/api/ps | jq
+```
+
+
+## se
 ---
 ---
