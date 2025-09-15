@@ -30,32 +30,95 @@ if log_level <= logging.INFO:
 mcp = FastMCP("bdr", stateless_http=False)
 
 API_BASE = "https://repository.library.brown.edu/api"
-log.debug(f'API_BASE: ``{API_BASE}``')
+log.info(f'API_BASE: ``{API_BASE}``')
 
 async def fetch_json(url: str) -> dict[str, Any]:
     """Helper to fetch JSON and raise exceptions on HTTP errors."""
-    log.debug('starting fetch_json()')
+    log.info('starting fetch_json()')
     async with httpx.AsyncClient() as client:
         r = await client.get(url, timeout=30.0)
         r.raise_for_status()
         return r.json()
 
 @mcp.tool()
-async def search_bdr(query: Annotated[str, "Solr syntax query (e.g., primary_title:irish)"],
+async def search_bdr(query: Annotated[str, "Solr syntax query (e.g., irish"],
                      rows: Annotated[Optional[int], "Number of results to return (default 10)"] = 10,
                      fields: Annotated[Optional[str], "Comma‑separated fields to return (e.g., pid,primary_title,abstract)"] = None) -> str:
     """
     Search the Brown Digital Repository using Solr query syntax.
 
     Args:
-      query: A Solr query string (use field names like primary_title or rel_is_member_of_collection_ssim)
+      query: A Solr query string
+        - for broadest results, just use the required term.
+        - optional: use field names like primary_title or rel_is_member_of_collection_ssim
       rows: Number of rows to return (default 10)
       fields: Comma‑separated list of fields to include in the response (optional)
 
     Returns:
+      JSON summarizing the results. 
+      Useful fields include 
+      - "response"-->"numFound" -- showing the total number of results, even if only a few were returned.
+      - in "response"-->"docs", each item contains an "ir_collection_name" showing the collection the item is a part of.
+
+    Other useful info:
+(useful-info-start)
+    ```
+    ## Info
+
+The BDR Search API is based on [Solr], one of the two most popular indexers in the world, so many developers will be familiar with it, and there are many online resources for how to structure queries (one [example-resource]). It doesn't support all of Solr's query features, but does support many useful ones. In general, the search query should be formatted the same way as standard Solr queries.
+
+If the query is badly formatted, a ‘400 / Bad Request’ response will be returned.
+
+If the search is successful (even if there are no results), a ‘200 / OK’ response will be returned.
+
+[Solr]: <https://en.wikipedia.org/wiki/Apache_Solr>
+[example-resource]: <https://lucene.apache.org/solr/guide/8_1/common-query-parameters.html#common-query-parameters>
+
+
+## Structure
+
+`https://repository.library.brown.edu/api/search/?[ search-query ]`
+* Example: <https://repository.library.brown.edu/api/search/?q=primary_title:irish&rows=25>
+*Note that although over 100 results are found, only 25 are returned*
+
+
+## Examples
+
+- Query on title with row-definition
+	- url: <https://repository.library.brown.edu/api/search/?q=primary_title:irish&rows=25>
+	- note that although over 100 results are found, only 25 are returned
+	- note that each result shows some 50+ elements of each result. Let's say you really only wanted a link to the item-id,title, and description. You could get those filtered results via: <https://repository.library.brown.edu/api/search/?q=primary_title:irish&rows=25&fl=pid,primary_title,abstract>
+		- added `&fl=pid,primary_title,abstract`
+	- and to get to the next 25: <https://repository.library.brown.edu/api/search/?q=primary_title:irish&rows=25&fl=pid,primary_title,abstract&start=25>
+		- added `&start=25` (0 through 24 were the first 25)
+
+- Find items in a collection, only returning title and pid
+	- url: <https://repository.library.brown.edu/api/search/?q=rel_is_member_of_collection_ssim:%22bdr:wum3gm43%22&fl=primary_title,pid>
+	- sometimes can provide more flexibility to specify the data returned than using the collections-api.
+
+- Find items in a collection where the title does _NOT_ contain the word 'Page'
+	- url: <https://repository.library.brown.edu/api/search/?q=rel_is_member_of_collection_ssim:%22bdr:wum3gm43%22%20AND%20-primary_title:*Page*&fl=primary_title,pid>
+	- specifies that only the `primary_title` and `pid` fields are returned.
+
+- Find items in a collection for those items that are _NOT_ part of another collection
+	- url: <https://repository.library.brown.edu/api/search/?q=rel_is_member_of_collection_ssim:%22bdr:wum3gm43%22+-rel_is_part_of_ssim:*&fl=primary_title,pid>
+
+- Real world example where I wanted to find hall-hoag org-items that didn't have a particular data-element
+    - url-human: ```https://repository.library.brown.edu/api/search/?q=rel_is_member_of_collection_ssim:"bdr:wum3gm43" AND 
+-mods_record_info_note_hallhoagorglevelrecord_ssim:"Organization Record" AND -rel_is_part_of_ssim:*```
+    - url encoded and usable: <https://repository.library.brown.edu/api/search/?q=rel_is_member_of_collection_ssim:%22bdr:wum3gm43%22%20AND%20%20-mods_record_info_note_hallhoagorglevelrecord_ssim:%22Organization%20Record%22%20AND%20-rel_is_part_of_ssim:*>
+    - explanation:
+        - is member of hall-hoag collection
+        - does not have a particular record-info-note data-element
+        - is not part-of another object
+    - note: once I add the data-element, the url will return zero items -- this is just a documentation example of how the apis can be useful to find records in need of data-cleanup.
+(useful-info-END)
+    ```
+
+    Returns:
       A formatted string summarizing the search results.
     """
-    log.debug('starting search_bdr()')
+    log.info('starting search_bdr()')
     # Build the search URL
     params = {
         'q': query,
@@ -65,7 +128,7 @@ async def search_bdr(query: Annotated[str, "Solr syntax query (e.g., primary_tit
         params['fl'] = fields
     # Compose the query string safely
     url = f"{API_BASE}/search/" + "?" + str(httpx.QueryParams(params))
-    log.debug(f'fetching search-url, ``{url}``')
+    log.info(f'fetching search-url, ``{url}``')
     data = await fetch_json(url)
     docs = data.get('response', {}).get('docs', [])  # The BDR wraps Solr responses in response/docs
     if not docs:
