@@ -70,7 +70,7 @@ async def search_bdr(
       "docs": [
         {
           "pid": "bdr:…",          # _always_ present to support follow-ups
-          "primary_title": "…",
+          "title": "…",            # includes PID suffix e.g., "Napoleon at Waterloo -- [bdr:123456]"
           "abstract": "…",
           "ir_collection_name": "…",
           "_score": <float|None>   # if Solr provides it
@@ -113,9 +113,15 @@ async def search_bdr(
     docs = []
     for d in raw_docs:
         pid = d.get('pid') or d.get('id')
+        base_title = d.get('primary_title') or d.get('title_display')
+        # Build title with PID suffix per requirement
+        if base_title:
+            title = f"{base_title} -- [{pid}]" if pid else base_title
+        else:
+            title = f"[{pid}]" if pid else "(no title)"
         docs.append({
             'pid': pid,
-            'primary_title': d.get('primary_title') or d.get('title_display'),
+            'title': title,
             'abstract': d.get('abstract'),
             'ir_collection_name': d.get('ir_collection_name'),
             '_score': d.get('score'),
