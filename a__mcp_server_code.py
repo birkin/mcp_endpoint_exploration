@@ -1,6 +1,7 @@
 ## imports httpx and mcp framework
 import logging
 import os
+import pprint
 import time
 from typing import Annotated, Any, Optional
 
@@ -89,6 +90,7 @@ async def search_bdr(
     - query: rel_is_member_of_collection_ssim:"bdr:123456"
     - query: (primary_title:sketch OR abstract:sketch) AND ir_collection_name:"Brown Daily Herald"
     """
+    log.info('\n\nstarting search_bdr()')
     t0 = time.perf_counter()
 
     # default fields we *always* want for follow-ups; merge with user-supplied
@@ -97,13 +99,17 @@ async def search_bdr(
     if fields:
         user_fl = {f.strip() for f in fields.split(',') if f.strip()}
     fl = ','.join(sorted(default_fl | user_fl))
+    log.info(f'fl: ``{fl}``')
 
     params: dict[str, Any] = {'q': query, 'rows': rows, 'fl': fl}
     if sort:
         params['sort'] = sort
+    log.info(f'params: ``{params}``')
 
     url = f'{API_BASE}/search/?' + str(httpx.QueryParams(params))
+    log.info(f'url: ``{url}``')
     data = await fetch_json(url)
+    log.info(f'data: ``{pprint.pformat(data)}``')
 
     resp = data.get('response', {}) or {}
     num_found = int(resp.get('numFound') or 0)
@@ -218,6 +224,6 @@ async def get_bdr_item(pid: Annotated[str, "Persistent identifier of a BDR objec
     return f"Title: {title}\nCollections: {coll_str}\nDescription: {description}"
 
 if __name__ == '__main__':
-    log.info('starting dundermain')
+    log.info('\n\nstarting dundermain')
     # Run via stdio transport for easiest integration with ollmcp or mcphost
     mcp.run(transport='stdio')
