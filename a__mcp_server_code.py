@@ -218,5 +218,6 @@ async def get_bdr_item(pid: Annotated[str, "Persistent identifier of a BDR objec
     return f"Title: {title}\nCollections: {coll_str}\nDescription: {description}"
 
 if __name__ == '__main__':
+    log.info('starting dundermain')
     # Run via stdio transport for easiest integration with ollmcp or mcphost
     mcp.run(transport='stdio')
