@@ -18,6 +18,11 @@ on this page...
 - choosing a model
 - confirming model is available via terminal
 - mcp-server code
+- the mcp-client
+- example session
+- backup overview of architecture
+- challenges
+- summary & next-steps
 
 ---
 
@@ -490,3 +495,133 @@ qwen3/2-tools❯
 [mcp_servers.json]: <https://github.com/birkin/mcp_endpoint_exploration/blob/main/b__mcp_servers.json>
 
 [ollcmp]: <https://github.com/jonigl/mcp-client-for-ollama>
+
+---
+
+## backup overview of architecture
+
+When I run a command like:
+`ollmcp --servers-json "/path/to/mcp_endpoint_exploration_stuff/mcp_servers.json" --model qwen3:8b`
+
+...behind the scenes, the `ollmcp` mcp-client reads the `mcp_servers.json` file to discover what MCP servers are available, and how to connect-to/start them. In this case, `ollmcp` ensures the `uv run ... run_queries.py` command is run, which results in the mcp-server advertising to `ollmcp` the tools available, and how to use them. 
+
+The mcp-server does this by sending to `ollmcp` structured metadata and JSON-Schema info for each tool. In this python-example context, the mcp-server prepares this info from the code's type-hints and very clear usage/parameter doc-strings of each tool.
+
+mcp-ervers can also advertise resources (read-only things like files/URLs) and prompts (reusable prompt templates).
+
+`ollmcp` then makes that information available to the LLM. 
+
+Then, `ollmcp` uses `ollama` to provide a CLI-based "chat" interface to the user.
+
+If the user submits something the LLM determines should use one of the tools, the LLM crafts the proper tool query and hands that off to `ollmcp`.
+
+`ollmcp` then: 
+- calls the mcp-tool-server to execute the query.
+	- let's say the tool hits an api which returns json
+	- the tool might modify that json in some way before returning the data to `ollmcp`.
+- `ollmcp` receives the tool response and conveys it to the LLM.
+
+The LLM, managed by `ollama`, then responds to the user.
+
+---
+
+## challenges
+
+The example session above makes it look like everything's working wonderfully, yes? 
+
+The _main_ problem I had was in getting followup reasonable queries to work as one would expect.
+
+Here's an example:
+
+```
+qwen3/2-tools❯ tell me more about the 1860 Brady photo
+
+First, I need to check if there's a PID (Persistent Identifier) associated with that 1860 Brady photo from the initial search. In the previous response, I     
+listed items, but I don't remember the exact PID. Wait, the initial search might have included the PID in the title or abstract. Let me think. The user        
+mentioned "the 1860 Brady photo," which was part of the search results. The title included "Mathew Brady photo (with a Lawrence & Houseworth stamp)" and the   
+PID was probably in the title or the doc details.                                                                                                              
+
+Wait, in the initial search response, each doc has a pid. For example, the first item might have had a pid like "bdr:12345". But since I don't have the exact  
+PID here, maybe I need to perform a more specific search to get the PID of that particular 1860 Brady photo.                                                   
+
+The user's current query is to get more details about that specific photo. Since the initial search didn't provide the PID, I should use the bdr.search_bdr    
+function again with a more targeted query. The query should include the year 1860 and the term "Brady" to narrow it down. Maybe using the fielded query like   
+"primary_title:"1860 Brady photo"" or "abstract:"1860 Brady"".                                                                                                 
+
+Alternatively, if the initial search included the PID in the title, I could extract it. For example, if the title was "Napoleon at Waterloo -- [bdr:123456]",  
+the PID is in there. But in the previous response, the user's search results mentioned "Mathew Brady photo (with a Lawrence & Houseworth stamp)" as part of the
+abstract. So the PID might be in the doc's title or abstract.                                                                                                  
+
+Wait, the initial search response had a "docs" array with each entry having a pid, title, abstract, etc. The user's first query was about Lincoln, and the     
+response included a doc with the title "1860 Hesler photograph of Lincoln (Chicago Historical Society)" and another with "reproduction of a 1860 Mathew Brady  
+photo (with a Lawrence & Houseworth stamp)". The PID for the Brady photo would be in that entry.                                                               
+
+But since I don't have the exact PID from the previous search, maybe I need to perform another search to get the specific PID. So, I should call bdr.search_bdr
+again with a query that specifically targets the 1860 Brady photo. The query could be "primary_title:"1860 Brady photo"" or "abstract:"1860 Mathew Brady"".    
+
+Alternatively, if the user is referring to the specific item mentioned in the initial search, perhaps the PID is part of the title. For example, if the title  
+was "1860 Mathew Brady photo -- [bdr:123456]", then the PID is there. But without the exact data, I need to make sure to get the correct PID.                  
+
+Therefore, the best approach is to use the bdr.search_bdr function again with a query that includes the year and the photographer's name to retrieve the       
+specific item's PID. Then, once the PID is obtained, use the bdr.get_bdr_item function to fetch detailed metadata about that particular photo.                 
+
+
+So, first, call the search function with a query like "primary_title:"1860 Brady photo"" or "abstract:"1860 Mathew Brady"". Then, from the response, extract   
+the PID and use it in the get_bdr_item function to get detailed information. This way, the user gets the specific details about the 1860 Brady photo.          
+
+╭───────────────────────── 🔧 Executing Tool bdr.search_bdr ──────────────────────────╮
+│                                                                                     │
+│  Arguments:                                                                         │
+│                                                                                     │
+│                                                                                     │
+│  {                                                                                  │
+│    "query": "primary_title:\"1860 Brady photo\" OR abstract:\"1860 Mathew Brady\""  │
+│  }                                                                                  │
+│                                                                                     │
+╰─────────────────────────────────────────────────────────────────────────────────────╯
+
+🧑‍💻 Human-in-the-Loop Confirmation
+Tool to execute: bdr.search_bdr
+Arguments:
+  • query: primary_title:"1860 Brady photo" OR abstract:"1...
+
+Options:
+  y/yes - Execute the tool call
+  n/no - Skip this tool call
+  disable - Disable HIL confirmations permanently
+
+What would you like to do? (y): 
+```
+
+This is actually from a different session from the initial example, but shows the issue: The LLM knows that having the PID for the 1860-Brady photo would be really useful -- but it doesn't have access to that PID, so it tries to prepare a _search_ query to get that, and usually fails -- the result being a bad and confusing user-experience.
+
+You can see, in the actual data that's returned to the mcp-client, that I've coded the pid to be a part of the title -- in a desperate attempt to have the LLM "remember" the PID. And occasionally this does work. When it does, that follow up question causes the LLM to use the other get-item tool to get the details of the item.
+
+I've read of a few techniques to try to help the LLM maintain an awareness of pids and items mentioned -- but I didn't have time to try them.
+
+---
+
+## summary & next-steps
+
+My main take-away is that there's an art to getting MCP endpoints to work well. 
+
+It seems like opportunities for improvements cross the three main components of the MCP stack:
+
+__the mcp-server tool-code__
+
+I experimented a lot to try to enable the mcp-server to expose as much useful info as possible to the mcp-client -- including instructions for it to communicate to the LLM the importance of maintaining an awareness of pids and items-mentioned. Undoubtedly this could be improved.
+
+__the mcp-client__
+
+I didn't do any special work at all to `ollama`. I suspect there are ways the the client could be made to be more helpful in guiding the LLM to use the tools -- though much of what I've read implies this should be done at the mcp-server/tool level.
+
+__the LLM__
+
+Context-length could play a role in this. Context-lengths are getting longer, rapidly, but reasoning models do use up tokens. But it's likely that custom-prompts could be given to the model that would help it cache/"remember" data returned from queries.
+
+---
+
+Though this Professional-Development-Day experience was frustrating at times, not being able to reliably configure the stack to work as intended -- it was a real success in  terms of my main goal: to gain/deepen an understanding of the MCP stack: relationships between the LLM (and the tool most focused on presenting it to the user) -- and the mcp-client, which interfaces with the LLM and the tools -- and the mcp-server, making endpoints available.
+
+---
+---
