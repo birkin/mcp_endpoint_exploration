@@ -13,19 +13,18 @@ In this investigation, I'd like to understand what's involved in _creating_ one 
 [pre-inv]: <https://github.com/birkin/mcp_agent_tutorial_project>
 
 on this page...
-- preparatory research
-- setting up ollama
-- choosing a model
-- confirming model is available via terminal
-- mcp-server code
-- the mcp-client
-- example session
-- backup overview of architecture
-- challenges
-- summary & next-steps
+- [preparatory research](#preparatory-research)
+- [setting up ollama](#setting-up-ollama)
+- [choosing a model](#choosing-a-model)
+- [confirming model is available via terminal](#confirming-model-is-available-via-terminal)
+- [mcp-server code](#mcp-server-code)
+- [the mcp-client](#the-mcp-client)
+- [example session](#example-session)
+- [backup overview of architecture](#backup-overview-of-architecture)
+- [challenges](#challenges)
+- [summary & next-steps](#summary--next-steps)
 
 ---
-
 
 ## preparatory research
 
@@ -507,7 +506,7 @@ When I run a command like:
 
 The mcp-server does this by sending to `ollmcp` structured metadata and JSON-Schema info for each tool. In this python-example context, the mcp-server prepares this info from the code's type-hints and very clear usage/parameter doc-strings of each tool.
 
-mcp-ervers can also advertise resources (read-only things like files/URLs) and prompts (reusable prompt templates).
+mcp-servers can also advertise resources (read-only things like files/URLs) and prompts.
 
 `ollmcp` then makes that information available to the LLM. 
 
@@ -613,7 +612,7 @@ I experimented a lot to try to enable the mcp-server to expose as much useful in
 
 __the mcp-client__
 
-I didn't do any special work at all to `ollama`. I suspect there are ways the the client could be made to be more helpful in guiding the LLM to use the tools -- though much of what I've read implies this should be done at the mcp-server/tool level.
+I didn't do any special work at all to `ollmcp`. I suspect there are ways the the client could be made to be more helpful in guiding the LLM to use the tools -- though much of what I've read implies this should be done at the mcp-server/tool level.
 
 __the LLM__
 
